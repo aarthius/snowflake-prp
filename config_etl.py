@@ -1,9 +1,6 @@
-from connection import get_session
 from snowflake.snowpark.functions import col, upper, trim
 
-def run_config_etl():
-    session = get_session()
-
+def run_config_etl(session):
     config_rows = session.table("CONFIG_MASTER").filter(col("is_active") == True).collect()
 
     source_df = session.table("customers")
@@ -20,8 +17,13 @@ def run_config_etl():
             source_df = source_df.withColumn(tgt_col, col(src_col))
 
     source_df.show()
-    session.close()
+    source_df.write.mode("overwrite").save_as_table("customers_mapped")
+    print("Saved to customers_mapped")
+
     return source_df
 
 if __name__ == "__main__":
-    run_config_etl()
+    from connection import get_session
+    session = get_session()
+    run_config_etl(session)
+    session.close()
